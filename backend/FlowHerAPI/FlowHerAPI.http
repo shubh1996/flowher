@@ -1,0 +1,6 @@
+@FlowHerAPI_HostAddress = http://localhost:5230
+
+GET {{FlowHerAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
