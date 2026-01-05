@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using FlowHerAPI.Data;
 using FlowHerAPI.Services;
+using FlowHerAPI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,26 +24,34 @@ if (builder.Environment.IsDevelopment())
 else
 {
     // Handle URI-style connection string from Render
-    if (connectionString != null && (connectionString.StartsWith("postgres") || connectionString.StartsWith("postgresql")))
+    if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres"))
     {
-        var uri = new Uri(connectionString);
-        var userInfo = uri.UserInfo.Split(':');
-        var username = userInfo[0];
-        var password = userInfo[1];
-        var host = uri.Host;
-        var port = uri.Port <= 0 ? 5432 : uri.Port;
-        var database = uri.AbsolutePath.TrimStart('/');
-        
-        connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
+        try 
+        {
+            var uri = new Uri(connectionString);
+            var userInfo = uri.UserInfo.Split(':');
+            var user = userInfo[0];
+            var password = userInfo.Length > 1 ? userInfo[1] : "";
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 5432;
+            var database = uri.AbsolutePath.TrimStart('/');
+
+            connectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true;Include Error Detail=true";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error parsing connection string: {ex.Message}");
+        }
     }
     
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseNpgsql(connectionString));
 }
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+// JWT & Services
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "Initial_Default_Key_For_Seed_Only_Change_In_Prod";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "FlowHerAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "FlowHerApp";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -60,10 +69,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-// Register services
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// Configure CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
@@ -80,7 +87,16 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Health Check
+app.MapGet("/health", async (ApplicationDbContext db) => {
+    try {
+        var canConnect = await db.Database.CanConnectAsync();
+        return Results.Ok(new { Status = "Healthy", Database = canConnect ? "Connected" : "Disconnected" });
+    } catch (Exception ex) {
+        return Results.Problem($"Database connection failed: {ex.Message}");
+    }
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -92,10 +108,9 @@ app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
-// Initialize and Seed Database
+// Seed
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
