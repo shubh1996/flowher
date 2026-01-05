@@ -219,7 +219,7 @@ export default function Checkout({ isOpen, onClose }: CheckoutProps) {
                                         <div className="flex-1">
                                             <h4 className="font-semibold text-forest-800">{item.product.name}</h4>
                                             <p className="text-sm text-forest-600">
-                                                {item.selectedQuantity.stems} stems × {item.quantity}
+                                                {item.selectedQuantity?.stems || 0} stems × {item.quantity}
                                             </p>
                                             {item.selectedCombos.length > 0 && (
                                                 <p className="text-xs text-sage-600 mt-1">

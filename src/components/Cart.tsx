@@ -60,7 +60,7 @@ export default function Cart({ isOpen, onClose, onCheckout }: CartProps) {
                                             {item.product.name}
                                         </h3>
                                         <p className="text-sm text-forest-600 mb-2">
-                                            {item.selectedQuantity.stems} stems
+                                            {item.selectedQuantity?.stems || 0} stems
                                         </p>
 
                                         {item.selectedCombos.length > 0 && (

@@ -7,7 +7,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     addItem: (item) => {
         const totalPrice =
             item.product.basePrice * item.quantity +
-            item.selectedQuantity.priceModifier +
+            (item.selectedQuantity?.priceModifier || 0) +
             item.selectedCombos.reduce((sum, combo) => sum + combo.price, 0);
 
         const newItem: CartItem = { ...item, totalPrice };

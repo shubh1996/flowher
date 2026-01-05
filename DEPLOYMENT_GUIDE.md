@@ -20,7 +20,7 @@ This guide will walk you through deploying your full-stack application.
 4.  **Region**: Choose the one closest to you.
 5.  **Plan**: Free (if available) or Starter.
 6.  Click **Create Database**.
-7.  Once created, copy the **Internal Connection String** (starts with `postgres://...`). You will need this for the Backend API.
+7. Once created, copy the **Internal Database URL** (starts with `postgres://...`). You will need this for the Backend API.
 
 ---
 
