@@ -238,7 +238,7 @@ export default function AdminDashboard() {
               <div key={product.id} className="card overflow-hidden">
                 {product.images && product.images.length > 0 && (
                   <img
-                    src={`http://localhost:5230${product.images[0]}`}
+                    src={product.images[0]?.startsWith('http') ? product.images[0] : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${product.images[0]}`}
                     alt={product.name}
                     className="w-full h-48 object-cover"
                   />

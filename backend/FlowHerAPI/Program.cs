@@ -23,29 +23,31 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Handle URI-style connection string from Render
-    if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres"))
+    // Handle URI-style connection string from Render (e.g., postgresql://...)
+    var connString = connectionString;
+    if (!string.IsNullOrEmpty(connString) && connString.StartsWith("postgres"))
     {
-        try 
-        {
-            var uri = new Uri(connectionString);
-            var userInfo = uri.UserInfo.Split(':');
-            var user = userInfo[0];
-            var password = userInfo.Length > 1 ? userInfo[1] : "";
-            var host = uri.Host;
-            var port = uri.Port > 0 ? uri.Port : 5432;
-            var database = uri.AbsolutePath.TrimStart('/');
-
-            connectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true;Include Error Detail=true";
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error parsing connection string: {ex.Message}");
-        }
+        // Convert postgres:// to a format Npgsql understands if it's a URI
+        try {
+            var databaseUri = new Uri(connString);
+            var userInfo = databaseUri.UserInfo.Split(':');
+            var builder2 = new Npgsql.NpgsqlConnectionStringBuilder
+            {
+                Host = databaseUri.Host,
+                Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
+                Username = userInfo[0],
+                Password = userInfo.Length > 1 ? userInfo[1] : "",
+                Database = databaseUri.AbsolutePath.TrimStart('/'),
+                SslMode = Npgsql.SslMode.Require,
+                TrustServerCertificate = true,
+                IncludeErrorDetail = true
+            };
+            connString = builder2.ToString();
+        } catch { /* if it's already a conn string, keep it */ }
     }
     
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseNpgsql(connectionString));
+        options.UseNpgsql(connString));
 }
 
 // JWT & Services
@@ -71,17 +73,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
+// Simplified CORS for testing purposes
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries) 
-                             ?? Array.Empty<string>();
-        
-        policy.WithOrigins(allowedOrigins.Union(new[] { "http://localhost:5173", "http://192.168.0.5:5173" }).ToArray())
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
@@ -103,7 +102,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowReactApp");
+app.UseCors("AllowAll");
 app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseAuthentication();

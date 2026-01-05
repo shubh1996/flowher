@@ -78,7 +78,7 @@ export default function ProductDetail({ product, isOpen, onClose }: ProductDetai
                         <div className="space-y-4">
                             <div className="relative aspect-square rounded-2xl overflow-hidden bg-cream-50">
                                 <img
-                                    src={product.images[currentImageIndex]}
+                                    src={product.images[currentImageIndex]?.startsWith('http') ? product.images[currentImageIndex] : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${product.images[currentImageIndex]}`}
                                     alt={product.name}
                                     className="w-full h-full object-cover"
                                 />

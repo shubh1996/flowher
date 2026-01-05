@@ -16,7 +16,7 @@ export default function ProductCard({ product, onQuickAdd, onClick }: ProductCar
             {/* Image Container */}
             <div className="relative aspect-square overflow-hidden bg-cream-50">
                 <img
-                    src={product.images[0]}
+                    src={product.images[0]?.startsWith('http') ? product.images[0] : `${import.meta.env.VITE_API_URL?.replace('/api', '')}${product.images[0]}`}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                 />
