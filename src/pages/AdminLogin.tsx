@@ -95,7 +95,7 @@ export default function AdminLogin() {
           <div className="mt-6 text-center text-sm text-forest-500">
             <p>Default credentials:</p>
             <p className="font-mono bg-sage-50 rounded px-2 py-1 mt-1">
-              admin / Admin@123
+              admin / FlowHer2026!
             </p>
           </div>
         </div>

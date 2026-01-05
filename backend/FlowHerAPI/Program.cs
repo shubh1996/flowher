@@ -23,11 +23,17 @@ if (builder.Environment.IsDevelopment())
 else
 {
     // Handle URI-style connection string from Render
-    if (connectionString != null && connectionString.StartsWith("postgres"))
+    if (connectionString != null && (connectionString.StartsWith("postgres") || connectionString.StartsWith("postgresql")))
     {
         var uri = new Uri(connectionString);
         var userInfo = uri.UserInfo.Split(':');
-        connectionString = $"Host={uri.Host};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};Port={uri.Port};SSL Mode=Require;Trust Server Certificate=true";
+        var username = userInfo[0];
+        var password = userInfo[1];
+        var host = uri.Host;
+        var port = uri.Port <= 0 ? 5432 : uri.Port;
+        var database = uri.AbsolutePath.TrimStart('/');
+        
+        connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
     }
     
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
